@@ -71,6 +71,24 @@ if(GPMP2_BUILD_MATLAB_TOOLBOX)
 endif()
 
 
+# Wrapping to Python
+find_package(GTSAM REQUIRED) # Make sure gtsam's install folder is in your PATH
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
+
+include_directories(${GTSAM_DIR}/cython)
+include_directories("/usr/local/cython")
+
+include(GtsamCythonWrap)
+include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
+
+wrap_and_install_library_cython("gpmp2.h"
+                                "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
+                                "/usr/local/cython" # install path
+                                gpmp2  # library to link with
+                                "gtsam"  # dependencies which need to be built before wrapping
+                                )
+add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
+
 # Install config and export files
 GtsamMakeConfigFile(gpmp2)
 export(TARGETS ${GPMP2_EXPORTED_TARGETS} FILE gpmp2-exports.cmake)
