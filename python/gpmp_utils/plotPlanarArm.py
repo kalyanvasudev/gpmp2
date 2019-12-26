@@ -1,20 +1,20 @@
-function h = plotPlanarArm(arm, conf, color, width)
-%PLOTPLANARARM Plot Arm class in 2D
-%
-%   Usage: PLOTPLANARARM(arm, conf, color, width)
-%   @arm    Arm object
-%   @conf   arm configuration vector
-%   @color  color string, use plot convention, e.g. 'r' is red
-%   @width  line width
+def plotPlanarArm(figure, axis, arm, conf, color, width):
+	# %PLOTPLANARARM Plot Arm class in 2D
+	# %
+	# %   Usage: PLOTPLANARARM(arm, conf, color, width)
+	# %   @arm    Arm object
+	# %   @conf   arm configuration vector
+	# %   @color  color string, use plot convention, e.g. 'r' is red
+	# %   @width  line width
 
-position = arm.forwardKinematicsPosition(conf);
-position = position(1:2, :);
-position = [[0;0], position];
+	# TODO: check if rows arnd colums are correct
+	position = arm.forwardKinematicsPosition(conf)
+	position = position[0:2, :]
+	position = np.append(np.asarray([0,0]).reshape(2,1), position, axis=1)
 
-style = strcat(color, '-');
-h(1) = plot(position(1,:), position(2,:), style, 'LineWidth', width);
+	# marker='-'
+	axis.plot(position[0,:], position[1,:],color=color, linewidth=width)
+	axis.plot(position[0,0:end], position[1,0:end], 'k.', markersize=20)
 
-h(2) = plot(position(1,1:end-1), position(2,1:end-1), 'k.', 'MarkerSize', 20);
 
-end
 

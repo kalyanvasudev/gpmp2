@@ -1,29 +1,31 @@
-function h = plotPlannarMobileArm(marm, p, vehsize, color, width)
-%PLOTPLANNARMOBILEARM Summary of this function goes here
-%   Detailed explanation goes here
 
-import gtsam.*
-import gpmp2.*
+import numpy as np
+from gtsam import *	
+from gpmp2 import *
 
-pose = p.pose();
-% vehicle corners
-corner1 = pose.transform_from(Point2(vehsize(1)/2, vehsize(2)/2));
-corner2 = pose.transform_from(Point2(-vehsize(1)/2, vehsize(2)/2));
-corner3 = pose.transform_from(Point2(-vehsize(1)/2, -vehsize(2)/2));
-corner4 = pose.transform_from(Point2(vehsize(1)/2, -vehsize(2)/2));
+def plotPlannarMobileArm(figure, axis, marm, p, vehsize, color, width):
+	#PLOTPLANNARMOBILEARM Summary of this function goes here
+	#   Detailed explanation goes here
 
-% vehicle base black lines
-h(1) = plot([corner1.x() corner2.x() corner3.x() corner4.x() corner1.x()], ...
-    [corner1.y() corner2.y() corner3.y() corner4.y() corner1.y()], 'k-');
+	pose = p.pose()
+	# vehicle corners
+	corner1 = pose.transform_from(Point2(vehsize[0]/2, vehsize[1]/2))
+	corner2 = pose.transform_from(Point2(-vehsize[0]/2, vehsize[1]/2))
+	corner3 = pose.transform_from(Point2(-vehsize[0]/2, -vehsize[1]/2))
+	corner4 = pose.transform_from(Point2(vehsize[0]/2, -vehsize[1]/2))
 
-% arm
-position = marm.forwardKinematicsPosition(p);
-position = position(1:2, :);
+	# vehicle base black lines
+	axis.plot([corner1.x() corner2.x() corner3.x() corner4.x() corner1.x()], \
+	    [corner1.y() corner2.y() corner3.y() corner4.y() corner1.y()], 'k-')
 
-style = strcat(color, '-');
-h(2) = plot(position(1,:), position(2,:), style, 'LineWidth', width);
+	# arm
+	position = marm.forwardKinematicsPosition(p)
+	position = position[0:2, :]
 
-h(3) = plot(position(1,1:end-1), position(2,1:end-1), 'k.', 'MarkerSize', 5);
+	
+	axis.plot(position[0,:], position[1,:], color=color, linewidth=width)
 
-end
+	axis.plot(position[0,0:end], position[1,0:end], 'k.', markersize=5)
+
+
 

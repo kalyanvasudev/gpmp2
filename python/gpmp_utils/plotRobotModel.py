@@ -1,29 +1,30 @@
-function h = plotRobotModel(robot, conf, color_rgb)
-%plotRobotModel Plot RobotModel class in 3D, visualize the body spheres
-%   also it can plot any child class of RobotModelm like ArmModel
-%
-%   Usage: plotRobotModel(robot, conf, color_rgb)
-%   @robot      RobotModel(or child) object
-%   @conf       robot configuration vector
-%   @color_rgb  optional color RGB values, default is gray [0.4 0.4 0.4]
+import numpy as np
+def plotSphere(figure, axis, radius, center, color):
+	# Make data
+	u = np.linspace(0, 2 * np.pi, 100)
+	v = np.linspace(0, np.pi, 100)
+	x = radius * np.outer(np.cos(u), np.sin(v)) + center[0]
+	y = radius * np.outer(np.sin(u), np.sin(v)) + center[1]
+	z = radius * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
 
-switch nargin
-    case 2
-        color_rgb = [0.4 0.4 0.4];
-end
+	# Plot the surface
+	axis.plot_surface(x, y, z, rstride=4, cstride=4, color=color)
 
-% points
-body_points = robot.sphereCentersMat(conf);
 
-% show
-colormap(color_rgb);
-[X_ball, Y_ball, Z_ball] = sphere(16);
 
-for i=1:robot.nr_body_spheres()
-    h(i) = surf(X_ball * robot.sphere_radius(i-1) + body_points(1, i), ...
-                Y_ball * robot.sphere_radius(i-1) + body_points(2, i), ...
-                Z_ball * robot.sphere_radius(i-1) + body_points(3, i));
-end
+def plotRobotModel(figure, axis, robot, conf, color_rgb=[(0.4, 0.4, 0.4)]):
+	#plotRobotModel Plot RobotModel class in 3D, visualize the body spheres
+	#   also it can plot any child class of RobotModelm like ArmModel
+	# 
+	#   Usage: plotRobotModel(robot, conf, color_rgb)
+	#   @robot      RobotModel(or child) object
+	#   @conf       robot configuration vector
+	#   @color_rgb  optional color RGB values, default is gray [0.4 0.4 0.4]
 
-end
+	# points
+	body_points = robot.sphereCentersMat(conf)
+
+	for i in range(robot.nr_body_spheres()):
+		# TODO: check if it is body_points[:,i] or body_point[i,:]
+		plotSphere(figure, axis, robot.sphere_radius[i], body_points[:,i], color=color_rgb)
 

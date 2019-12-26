@@ -1,19 +1,15 @@
-function h = plotArm(arm, conf, color, width)
-%PLOTARM Plot Arm class in 3D
-%
-%   Usage: PLOTARM(arm, conf, color, width)
-%   @arm    Arm object
-%   @conf   arm configuration vector
-%   @color  color string, use plot convention, e.g. 'r' is red
-%   @width  line width
+def plotArm(figure, axis, arm, conf, color, width):
+	# PLOTARM Plot Arm class in 3D
+	#
+	#   Usage: PLOTARM(arm, conf, color, width)
+	#   @arm    Arm object
+	#   @conf   arm configuration vector
+	#   @color  color string, use plot convention, e.g. 'r' is red
+	#   @width  line width
 
-position = arm.forwardKinematicsPosition(conf);
+	position = arm.forwardKinematicsPosition(conf)
+	# marker='-'
+	axis.plot(position[0,:], position[1,:], position[2,:], color=color, linewidth=width)
 
-style = strcat(color, '-');
-h(1) = plot3(position(1,:), position(2,:), position(3,:), style, 'LineWidth', width);
-
-h(2) = plot3(position(1,1:end-1), position(2,1:end-1), position(3,1:end-1), 'k.', ...
-    'MarkerSize', 10*width);
-
-end
+	axis.plot(position[0,0:end], position[1,0:end], position[2,0:end], 'k.', markersize=10*width)
 

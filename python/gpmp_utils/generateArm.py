@@ -51,9 +51,9 @@ def generateArm(arm_str, base_pose=None):
     #% 3 link arm
     elif arm_str is 'SimpleThreeLinksArm':
         #% abstract arm
-        a = np.asarray([0.5, 0.5, 0.5]).reshape(3,1)
-        d = np.asarray([0, 0, 0]).reshape(3,1)
-        alpha = np.asarray([0, 0, 0]).reshape(3,1)
+        a = np.asarray([0.5, 0.5, 0.5])
+        d = np.asarray([0, 0, 0])
+        alpha = np.asarray([0, 0, 0])
         arm = Arm(3, a, alpha, d)
         
         #% physical arm
@@ -79,16 +79,16 @@ def generateArm(arm_str, base_pose=None):
         sphere_vec = BodySphereVector()
         for i in range(nr_body):
             sphere_vec.push_back(BodySphere(spheres_data[i,0], spheres_data[i,4],
-                Point3(spheres_data[i,1:4].reshape(3,1))))
+                Point3(spheres_data[i,1:4])))
         arm_model = ArmModel(arm, sphere_vec)
 
     #% 7 link WAM arm
     elif arm_str is 'WAMArm':
         #% arm: WAM arm
-        alpha = np.asarray([-np.pi/2, np.pi/2,-np.pi/2, np.pi/2,-np.pi/2, np.pi/2,0]).reshape(7,1)
-        a = np.asarray([0,0,0.045,-0.045,0,0,0]).reshape(7,1)
-        d = np.asarray([0,0,0.55,0,0.3,0,0.06]).reshape(7,1)
-        theta = np.asarray([0, 0, 0, 0, 0, 0, 0]).reshape(7,1)
+        alpha = np.asarray([-np.pi/2, np.pi/2,-np.pi/2, np.pi/2,-np.pi/2, np.pi/2,0])
+        a = np.asarray([0,0,0.045,-0.045,0,0,0])
+        d = np.asarray([0,0,0.55,0,0.3,0,0.06])
+        theta = np.asarray([0, 0, 0, 0, 0, 0, 0])
         abs_arm = Arm(7, a, alpha, d, base_pose, theta)
         
         #% physical arm
@@ -116,16 +116,16 @@ def generateArm(arm_str, base_pose=None):
         sphere_vec = BodySphereVector()
         for i in range(nr_body):
             sphere_vec.push_back(BodySphere(spheres_data[i,0], spheres_data[i,4],
-                Point3(spheres_data[i,1:4].reshape(3,1))))
+                Point3(spheres_data[i,1:4])))
         arm_model = ArmModel(abs_arm, sphere_vec)
 
     #% 7 DOF PR2 right arm
     elif arm_str is 'PR2Arm':
         #% arm: PR2 arm
-        alpha = np.asarray([-1.5708, 1.5708, -1.5708, 1.5708, -1.5708, 1.5708, 0]).reshape(7,1)
-        a = np.asarray([0.1, 0, 0, 0, 0, 0, 0]).reshape(7,1)
-        d = np.asarray([0, 0, 0.4, 0, 0.321, 0, 0]).reshape(7,1)
-        theta = np.asarray([0, 1.5708, 0, 0, 0, 0, 0]).reshape(7,1)
+        alpha = np.asarray([-1.5708, 1.5708, -1.5708, 1.5708, -1.5708, 1.5708, 0])
+        a = np.asarray([0.1, 0, 0, 0, 0, 0, 0])
+        d = np.asarray([0, 0, 0.4, 0, 0.321, 0, 0])
+        theta = np.asarray([0, 1.5708, 0, 0, 0, 0, 0])
         abs_arm = Arm(7, a, alpha, d, base_pose, theta)
         #% physical arm
         #% sphere data [id x y z r]
@@ -159,16 +159,16 @@ def generateArm(arm_str, base_pose=None):
         sphere_vec = BodySphereVector()
         for i in range(nr_body):
             sphere_vec.push_back(BodySphere(spheres_data[i,0], spheres_data[i,4],
-                Point3(spheres_data[i,1:4].reshape(3,1))))
+                Point3(spheres_data[i,1:4])))
         arm_model = ArmModel(abs_arm, sphere_vec)
 
     #% 6 DOF JACO2 arm
     elif arm_str is 'JACO2Arm':
         #% arm: JACO2 6DOF arm
-        alpha = np.asarray([np.pi/2, np.pi, np.pi/2, 1.0472, 1.0472, np.pi]).reshape(6,1)
-        a = np.asarray([0, 0.41, 0, 0, 0, 0]).reshape(6,1)
-        d = np.asarray([0.2755, 0, -0.0098, -0.2501, -0.0856, -0.2228]).reshape(6,1)
-        theta = np.asarray([0, 0, 0, 0, 0, 0]).reshape(6,1)
+        alpha = np.asarray([np.pi/2, np.pi, np.pi/2, 1.0472, 1.0472, np.pi])
+        a = np.asarray([0, 0.41, 0, 0, 0, 0])
+        d = np.asarray([0.2755, 0, -0.0098, -0.2501, -0.0856, -0.2228])
+        theta = np.asarray([0, 0, 0, 0, 0, 0])
         abs_arm = Arm(6, a, alpha, d, base_pose, theta);
         #% physical arm
         #% sphere data [id x y z r]
@@ -214,11 +214,11 @@ def generateArm(arm_str, base_pose=None):
         sphere_vec = BodySphereVector()
         for i in range(nr_body):
             sphere_vec.push_back(BodySphere(spheres_data[i,0], spheres_data[i,4],
-                Point3(spheres_data[i,1:4].reshape(3,1))))
+                Point3(spheres_data[i,1:4])))
         arm_model = ArmModel(abs_arm, sphere_vec)
         
     #% no such dataset
     else:
-        raise NameError('No such arm exists');
+        raise NameError('No such arm exists')
 
     return arm_model
