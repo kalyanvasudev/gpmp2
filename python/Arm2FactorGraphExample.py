@@ -1,11 +1,11 @@
 import numpy as np
 from gtsam import *	
 from gpmp2 import *
+import matplotlib.pyplot as plt
 from gpmp_utils.generate2Ddataset import generate2Ddataset
 from gpmp_utils.signedDistanceField2D import signedDistanceField2D
 from gpmp_utils.generateArm import generateArm
-
-
+from gpmp_utils.plotSignedDistanceField2D import plotSignedDistanceField2D
 # small dataset
 dataset = generate2Ddataset('OneObstacleDataset')
 rows = dataset.rows
@@ -20,8 +20,12 @@ sdf = PlanarSDF(origin_point2, cell_size, field)
 
 # plot sdf
 # figure(2)
-# plotSignedDistanceField2D(field, dataset.origin_x, dataset.origin_y, dataset.cell_size);
-# title('Signed Distance Field')
+figure1 = plt.figure(0)
+axis1 = figure1.gca()#for 3-d, set gca(projection='3d')
+plotSignedDistanceField2D(figure1, axis1, field, dataset.origin_x, 
+                                    dataset.origin_y, dataset.cell_size)
+
+
 
 # settings
 total_time_sec = 5.0
@@ -129,7 +133,7 @@ else:
 optimizer.optimize()
 result = optimizer.values()
 #result.print('Final results')
-#print(result)
+print(result)
 
 #%% plot final values
 # for i=0:total_time_step
@@ -141,3 +145,6 @@ result = optimizer.values()
 #     conf = result.atVector(symbol('x', i))
 #     plotPlanarArm(arm.fk_model(), conf, 'b', 2)
 #     pause(pause_time), hold off
+
+
+plt.show()
