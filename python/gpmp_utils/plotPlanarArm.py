@@ -1,3 +1,4 @@
+import numpy as np
 def plotPlanarArm(figure, axis, arm, conf, color, width):
 	# %PLOTPLANARARM Plot Arm class in 2D
 	# %
@@ -14,7 +15,4 @@ def plotPlanarArm(figure, axis, arm, conf, color, width):
 
 	# marker='-'
 	axis.plot(position[0,:], position[1,:],color=color, linewidth=width)
-	axis.plot(position[0,0:end], position[1,0:end], 'k.', markersize=20)
-
-
-
+	axis.plot(position[0,:], position[1, :], 'k.', markersize=20)

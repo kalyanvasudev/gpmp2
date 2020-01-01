@@ -10,7 +10,7 @@ def plotPointRobot2D(figure, axis, robot, conf, color_rgb=[(0.4, 0.4, 0.4)]):
 
 	# points
 	body_points = robot.sphereCentersMat(conf)
-	r = robot.sphere_radius[0]
+	r = robot.sphere_radius(0)
 
 	theta = linspace(0,2*np.pi)
 	x = r * np.cos(theta) + body_points[0,:]

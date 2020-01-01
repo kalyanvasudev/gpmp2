@@ -1,18 +1,18 @@
 import numpy as np
 def plotSphere(figure, axis, radius, center, color):
 	# Make data
-	u = np.linspace(0, 2 * np.pi, 10)
-	v = np.linspace(0, np.pi, 10)
-	x = radius * np.outer(np.cos(u), np.sin(v)) + center[0]
-	y = radius * np.outer(np.sin(u), np.sin(v)) + center[1]
-	z = radius * np.outer(np.ones(np.size(u)), np.cos(v)) + center[2]
+	u = np.linspace(0, 2 * np.pi, 100)
+	
+	x = radius * np.cos(u) + center[0]
+	y = radius * np.sin(u) + center[1]
+	
 
 	# Plot the surface
-	axis.plot_surface(x, y, z, rstride=4, cstride=4, color=color)
+	axis.plot(x, y, color=color)
 
 
 
-def plotRobotModel(figure, axis, robot, conf, color_rgb=[0.4, 0.4, 0.4]):
+def plotRobotModel2D(figure, axis, robot, conf, color_rgb=[0.4, 0.4, 0.4]):
 	#plotRobotModel Plot RobotModel class in 3D, visualize the body spheres
 	#   also it can plot any child class of RobotModelm like ArmModel
 	# 

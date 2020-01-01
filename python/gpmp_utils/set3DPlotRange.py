@@ -1,4 +1,4 @@
-def set3DPlotRange(axis,dataset):
+def set3DPlotRange(figure, axis,dataset):
 	# %SET3DPLOTRANGE Set figure axis range for 3D dataset 
 	# %
 	# %   Usage: SET3DPLOTRANGE(dataset)
@@ -11,7 +11,7 @@ def set3DPlotRange(axis,dataset):
 	z1 = dataset.origin_z
 	z2 = dataset.z * dataset.cell_size + dataset.origin_z
 
-	axis.axis([x1 x2 y1 y2 z1 z2])
+	axis.axis([x1, x2, y1, y2])
 
 
 

@@ -11,5 +11,5 @@ def plotArm(figure, axis, arm, conf, color, width):
 	# marker='-'
 	axis.plot(position[0,:], position[1,:], position[2,:], color=color, linewidth=width)
 
-	axis.plot(position[0,0:end], position[1,0:end], position[2,0:end], 'k.', markersize=10*width)
+	axis.plot(position[0,:-1], position[1,:-1], position[2,:-1], 'k.', markersize=10*width)
 

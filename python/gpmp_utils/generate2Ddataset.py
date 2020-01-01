@@ -82,7 +82,7 @@ def generate2Ddataset(dataset_str):
 		dataset.origin_y = -1
 		dataset.cell_size = 0.01
 		# map
-		dataset.map = np.zeros(zeros(dataset.rows, dataset.cols))
+		dataset.map = np.zeros((dataset.rows, dataset.cols))
 		# obstacles
 		dataset.map = add_obstacle([200, 200], [80, 100], dataset.map)
 		dataset.map = add_obstacle([160, 80], [30, 80], dataset.map)

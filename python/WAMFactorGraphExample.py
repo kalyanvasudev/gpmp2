@@ -1,12 +1,15 @@
 import numpy as np
 from gtsam import * 
 from gpmp2 import *
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d, Axes3D #<-- Note the capitalization! 
 from gpmp_utils.generate3Ddataset import generate3Ddataset
 from gpmp_utils.signedDistanceField3D import signedDistanceField3D
 from gpmp_utils.generateArm import generateArm
-
-
-
+from gpmp_utils.plotMap3D import plotMap3D
+from gpmp_utils.plotRobotModel import plotRobotModel
+from gpmp_utils.set3DPlotRange import set3DPlotRange
+from gpmp_utils.plotArm import plotArm
 
 # dataset
 dataset = generate3Ddataset('WAMDeskDataset')
@@ -28,19 +31,17 @@ start_vel = np.zeros(7)
 end_vel = np.zeros(7)
 
 # plot problem setting
-# figure(1), hold on
-# title('Problem Settings')
-# plotMap3D(dataset.corner_idx, origin, cell_size);
-# plotRobotModel(arm, start_conf)
-# plotRobotModel(arm, end_conf)
-# % plot config
-# set3DPlotRange(dataset)
-# grid on, view(3)
-# hold off
+figure0 = plt.figure(0)
+axis0 = Axes3D(figure0)
+axis0.set_title('Problem Settings')
+set3DPlotRange(figure0, axis0, dataset)
+plotRobotModel(figure0, axis0, arm, start_conf)
+plotRobotModel(figure0, axis0, arm, end_conf)
+plotMap3D(figure0, axis0, dataset.corner_idx, origin, cell_size)
 
 
 ## settings
-total_time_sec = 2
+total_time_sec = 2.0
 total_time_step = 10
 total_check_step = 100
 delta_t = total_time_sec / total_time_step
@@ -78,29 +79,23 @@ pause_time = total_time_sec / total_plot_step
 ## initial traj
 init_values = initArmTrajStraightLine(start_conf, end_conf, total_time_step)
 
-# % % plot initial traj
-# % if plot_inter_traj
-# %     plot_values = interpolateArmTraj(init_values, Qc_model, delta_t, plot_inter);
-# % else
-# %     plot_values = init_values;
-# % end
-# % 
-# % % plot init values
-# % figure(3),
-# % hold on
-# % title('Initial Values')
-# % % plot world
-# % plotMap3D(dataset.corner_idx, origin, cell_size);
-# % for i=0:total_plot_step
-# %     % plot arm
-# %     conf = plot_values.atVector(symbol('x', i));
-# %     plotPhysicalArm(arm, conf)
-# %     % plot config
-# %     set3DPlotRange(dataset)
-# %     grid on, view(2)
-# %     pause(pause_time)
-# % end
-# % hold off
+# plot initial traj
+if plot_inter_traj:
+    plot_values = interpolateArmTraj(init_values, Qc_model, delta_t, plot_inter)
+else:
+    plot_values = init_values
+
+# plot init values
+figure1 = plt.figure(1)
+axis1 = Axes3D(figure1)
+axis1.set_title('Initial Values')
+# plot world
+plotMap3D(figure1, axis1, dataset.corner_idx, origin, cell_size)
+set3DPlotRange(figure1, axis1, dataset)
+for i in range(total_plot_step):
+    conf = plot_values.atVector(symbol(ord('x'), i));
+    plotArm(figure1, axis1, arm.fk_model(), conf, 'b', 2)
+    plt.pause(pause_time)
 
 
 ## init optimization
@@ -113,11 +108,11 @@ for i in range(total_time_step+1):
    
     # priors
     if i==0:
-        graph.add(PriorFactorVector(key_pos, start_conf, pose_fix_model))
-        graph.add(PriorFactorVector(key_vel, start_vel, vel_fix_model))
+        graph.push_back(PriorFactorVector(key_pos, start_conf, pose_fix_model))
+        graph.push_back(PriorFactorVector(key_vel, start_vel, vel_fix_model))
     elif i==total_time_step:
-        graph.add(PriorFactorVector(key_pos, end_conf, pose_fix_model))
-        graph.add(PriorFactorVector(key_vel, end_vel, vel_fix_model))
+        graph.push_back(PriorFactorVector(key_pos, end_conf, pose_fix_model))
+        graph.push_back(PriorFactorVector(key_vel, end_vel, vel_fix_model))
     
     # GP priors and cost factor
     if i > 0:
@@ -125,24 +120,24 @@ for i in range(total_time_step+1):
         key_pos2 = symbol(ord('x'), i)
         key_vel1 = symbol(ord('v'), i-1)
         key_vel2 = symbol(ord('v'), i)
-        graph.add(GaussianProcessPriorLinear(key_pos1, key_vel1,
+        graph.push_back(GaussianProcessPriorLinear(key_pos1, key_vel1,
             key_pos2, key_vel2, delta_t, Qc_model))
         
         # cost factor
-        graph.add(ObstacleSDFFactorArm(
+        graph.push_back(ObstacleSDFFactorArm(
             key_pos, arm, sdf, cost_sigma, epsilon_dist))
-        graph_obs.add(ObstacleSDFFactorArm(
+        graph_obs.push_back(ObstacleSDFFactorArm(
             key_pos, arm, sdf, cost_sigma, epsilon_dist))
         
         # GP cost factor
         if check_inter > 0:
             for j in range(1, check_inter+1):
                 tau = j * (total_time_sec / total_check_step)
-                graph.add(ObstacleSDFFactorGPArm(
+                graph.push_back(ObstacleSDFFactorGPArm(
                     key_pos1, key_vel1, key_pos2, key_vel2,
                     arm, sdf, cost_sigma, epsilon_dist,
                     Qc_model, delta_t, tau))
-                graph_obs.add(ObstacleSDFFactorGPArm(
+                graph_obs.push_back(ObstacleSDFFactorGPArm(
                     key_pos1, key_vel1, key_pos2, key_vel2,
                     arm, sdf, cost_sigma, epsilon_dist, 
                     Qc_model, delta_t, tau))
@@ -170,55 +165,42 @@ else:
 print('Initial Error = %d\n', graph.error(init_values))
 print('Initial Collision Cost: %d\n', graph_obs.error(init_values))
 
-optimizer.optimize()
 
+optimizer.optimizeSafely()
 result = optimizer.values()
-# result.print('Final results')
 
 print('Error = %d\n', graph.error(result))
 print('Collision Cost End: %d\n', graph_obs.error(result))
 
-# %% plot results
-# if plot_inter_traj
-#     plot_values = interpolateArmTraj(result, Qc_model, delta_t, plot_inter);
-# else
-#     plot_values = result;
-# end
-
-# % plot final values
-# figure(4),
-# clf, hold on
-# title('Result Values')
-# % plot world
-# plotMap3D(dataset.corner_idx, origin, cell_size);
-# for i=0:total_plot_step
-#     % plot arm
-#     conf = plot_values.atVector(symbol('x', i));
-#     plotArm(arm.fk_model(), conf, 'b', 2)
-#     % plot config
-#     set3DPlotRange(dataset)
-#     grid on, view(-5, 12)
-#     pause(pause_time)
-# end
-# hold off
+# plot results
+if plot_inter_traj:
+    plot_values = interpolateArmTraj(result, Qc_model, delta_t, plot_inter)
+else:
+    plot_values = result
 
 
-# % plot final values
-# figure(5),
-# for i=0:total_plot_step
-#     clf
-#     hold on, view(-5, 12)
-#     title('Result Values')
-#     % plot world
-#     plotMap3D(dataset.corner_idx, origin, cell_size);
-#     % plot arm
-#     conf = plot_values.atVector(symbol('x', i));
-#     plotRobotModel(arm, conf)
-#     % plot config
-#     set3DPlotRange(dataset)
-#     grid on, 
-#     pause(pause_time)
-# end
-# hold off
+
+# plot final values
+figure2 = plt.figure(2)
+axis2 = Axes3D(figure2)
+axis2.set_title('Result Values')
+plotMap3D(figure2, axis2, dataset.corner_idx, origin, cell_size)
+set3DPlotRange(figure2, axis2, dataset)
+for i in range(total_plot_step):
+    conf = plot_values.atVector(symbol(ord('x'), i))
+    plotArm(figure2, axis2, arm.fk_model(), conf, 'b', 2)
+    plt.pause(pause_time)
 
 
+# plot final values
+figure3 = plt.figure(3)
+axis3 = Axes3D(figure3)
+axis3.set_title('Result Values')
+plotMap3D(figure3, axis3, dataset.corner_idx, origin, cell_size)
+set3DPlotRange(figure3, axis3, dataset)
+for i in range(total_plot_step):
+    conf = plot_values.atVector(symbol(ord('x'), i))
+    plotRobotModel(figure3, axis3, arm, conf)
+    plt.pause(pause_time)
+
+plt.show()
