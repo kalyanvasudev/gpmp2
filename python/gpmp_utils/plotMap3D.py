@@ -17,12 +17,12 @@ def plotMap3D(figure, axis, corner_idx, origin, cell_size):
         y2 = corner_idx[i, 3]*cell_size + origin[1]
         z1 = corner_idx[i, 4]*cell_size + origin[2]
         z2 = corner_idx[i, 5]*cell_size + origin[2]
-        axis.plot_wireframe([x1, x2, x1, x2], [y1, y1, y2, y2], [z1, z1, z1, z1])#,rstride=4, cstride=4, color='r')
-        axis.plot_wireframe([x1, x2, x1, x2], [y1, y1, y2, y2], [z2, z2, z2, z2])#,rstride=4, cstride=4, color='r')
-        axis.plot_wireframe([x1, x1, x1, x1], [y1, y1, y2, y2], [z1, z2, z1, z2])#,rstride=4, cstride=4, color='r')
-        axis.plot_wireframe([x2, x2, x2, x2], [y1, y1, y2, y2], [z1, z2, z1, z2])#,rstride=4, cstride=4, color='r')
-        axis.plot_wireframe([x1, x2, x1, x2], [y1, y1, y1, y1], [z1, z1, z2, z2])#,rstride=4, cstride=4, color='r')
-        axis.plot_wireframe([x1, x2, x1, x2], [y2, y2, y2, y2], [z1, z1, z2, z2])#,rstride=4, cstride=4, color='r')
+        axis.plot([x1, x2, x1, x2], [y1, y1, y2, y2], [z1, z1, z1, z1])#,rstride=4, cstride=4, color='r')
+        axis.plot([x1, x2, x1, x2], [y1, y1, y2, y2], [z2, z2, z2, z2])#,rstride=4, cstride=4, color='r')
+        axis.plot([x1, x1, x1, x1], [y1, y1, y2, y2], [z1, z2, z1, z2])#,rstride=4, cstride=4, color='r')
+        axis.plot([x2, x2, x2, x2], [y1, y1, y2, y2], [z1, z2, z1, z2])#,rstride=4, cstride=4, color='r')
+        axis.plot([x1, x2, x1, x2], [y1, y1, y1, y1], [z1, z1, z2, z2])#,rstride=4, cstride=4, color='r')
+        axis.plot([x1, x2, x1, x2], [y2, y2, y2, y2], [z1, z1, z2, z2])#,rstride=4, cstride=4, color='r')
 
     axis.axis('equal')
 

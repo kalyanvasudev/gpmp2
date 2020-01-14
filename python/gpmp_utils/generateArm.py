@@ -119,6 +119,48 @@ def generateArm(arm_str, base_pose=None):
                 Point3(spheres_data[i,1:4])))
         arm_model = ArmModel(abs_arm, sphere_vec)
 
+    #% 7 link WAM arm
+    elif arm_str is 'SAWYERArm':
+        #% arm: WAM arm
+        alpha = np.asarray([-np.pi/2, -np.pi/2, np.pi/2, np.pi/2, -np.pi/2, -np.pi/2, 0.0])
+        a = 0.001*np.asarray([81.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        d = 0.001*np.asarray([317.0, 192.5, 400.0, -168.5, 400.0, 136.3, 133.75])
+        theta = np.asarray([0.0, 3*np.pi/2, 0.0, np.pi, 0.0, np.pi, 3*np.pi/2])
+        abs_arm = Arm(7, a, alpha, d, base_pose, theta)
+        
+        #% physical arm
+        #% sphere data [id x y z r]
+        spheres_data = [
+        [0,    0.0,   0.0,    0.0,   0.07],
+        [0,   -0.06,  0.1,   -0.02,  0.07],
+        [0,   -0.08,  0.23,  -0.01,  0.08],
+        [0,    0.0,   0.0,    0.1,   0.07],
+        [1,   0.0,  0.0,    0.0,  0.06],
+        [1,   0.0,  0.0,    0.11,  0.06],
+        [1,   0.0,  0.0,    0.22,  0.06],
+        [1,   0.0,  0.0,    0.31,  0.05],
+        [2,   0.0,  0.0,    -0.02,  0.05],
+        [2,   0.0,  0.0,    -0.08,  0.055],
+        [3,   0.0,  0.0,    0.0,  0.056],
+        [3,   0.0,  0.0,    0.1,  0.054],
+        [3,   0.0,  0.0,    0.2,  0.054],
+        [3,   0.0,  0.0,    0.3,  0.054],
+        [4,   0.0,  0.0,    0.0,  0.05],
+        [4,   0.0,  0.0,    0.075,  0.045],
+        [5,   0.0,  0.0,    0.0,  0.045],
+        [5,   0.0,  0.0,    0.08,  0.045],
+        [6,  -0.04,  0.0,  -0.02,  0.04],
+        [6,   0.0,  0.0,    0.0,   0.05],
+        [6,   0.0,  0.0,     0.07,  0.04]]
+
+        spheres_data = np.asarray(spheres_data)
+        nr_body = spheres_data.shape[0]
+        sphere_vec = BodySphereVector()
+        for i in range(nr_body):
+            sphere_vec.push_back(BodySphere(spheres_data[i,0], spheres_data[i,4],
+                Point3(spheres_data[i,1:4])))
+        arm_model = ArmModel(abs_arm, sphere_vec)
+
     #% 7 DOF PR2 right arm
     elif arm_str is 'PR2Arm':
         #% arm: PR2 arm
