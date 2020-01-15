@@ -1,6 +1,6 @@
 import numpy as np
 
-def plotPointRobot2D(figure, axis, robot, conf, color_rgb=[(0.4, 0.4, 0.4)]):
+def plotPointRobot2D(figure, axis, robot, conf, color_rgb=[0.4, 0.4, 0.4]):
 	# %plotPointRobot2D Plot PointRobotModel in 2D
 	# %
 	# %   Usage: plotRobotModel(robot, conf, color_rgb)
@@ -12,7 +12,7 @@ def plotPointRobot2D(figure, axis, robot, conf, color_rgb=[(0.4, 0.4, 0.4)]):
 	body_points = robot.sphereCentersMat(conf)
 	r = robot.sphere_radius(0)
 
-	theta = linspace(0,2*np.pi)
+	theta = np.linspace(0,2*np.pi, num=40)
 	x = r * np.cos(theta) + body_points[0,:]
 	y = r * np.sin(theta) + body_points[1,:]
 	axis.plot(x, y, color=color_rgb)

@@ -18,7 +18,7 @@ def get_center(x, y, dataset):
 	
 	center = np.asarray([y - dataset.origin_y, 
 						x - dataset.origin_x])/dataset.cell_size
-	return center
+	return center.astype(int)
 
 def get_dim(w, h, dataset):
 	
@@ -96,7 +96,7 @@ def generate2Ddataset(dataset_str):
 		dataset.origin_y = -10
 		dataset.cell_size = 0.1
 		# map
-		dataset.map = np.zeros(zeros(dataset.rows, dataset.cols))
+		dataset.map = np.zeros((dataset.rows, dataset.cols))
 		# obstacles
 		dataset.map = add_obstacle(get_center(12,10,dataset), get_dim(5,7,dataset), dataset.map)
 		dataset.map = add_obstacle(get_center(-7,10,dataset), get_dim(10,7,dataset), dataset.map)
