@@ -6,6 +6,76 @@ from random import seed
 from random import random
 
 
+import numpy as np
+from gtsam import * 
+from gpmp2 import *
+import matplotlib.pyplot as plt
+from gpmp_utils.generate2Ddataset import generate2Ddataset
+from gpmp_utils.signedDistanceField2D import signedDistanceField2D
+from gpmp_utils.plotEvidenceMap2D import plotEvidenceMap2D
+from gpmp_utils.plotPointRobot2D import plotPointRobot2D
+from gpmp_utils.plotSignedDistanceField2D import plotSignedDistanceField2D
+
+
+from pyrobot import Robot
+
+dataset = generate2Ddataset('MultiObstacleDataset')
+rows = dataset.rows;
+cols = dataset.cols;
+cell_size = dataset.cell_size;
+origin_point2 = Point2(dataset.origin_x, dataset.origin_y)
+
+# Signed Distance field
+field = signedDistanceField2D(dataset.map, cell_size)
+sdf = PlanarSDF(origin_point2, cell_size, field)
+
+
+# settings
+total_time_sec = 10.0
+total_time_step = 20
+total_check_step = 50.0
+delta_t = total_time_sec / total_time_step
+check_inter = int(total_check_step / total_time_step - 1)
+
+use_GP_inter = True
+
+
+# point robot model
+pR = PointRobot(2,1)
+spheres_data = np.asarray([0.0,  0.0,  0.0,  0.0,  1.5])
+nr_body = spheres_data.shape[0]
+sphere_vec = BodySphereVector()
+sphere_vec.push_back(BodySphere(spheres_data[0], spheres_data[4], \
+        Point3(spheres_data[1:4])))
+pR_model = PointRobotModel(pR, sphere_vec)
+
+# GP
+Qc = np.identity(2)
+Qc_model = noiseModel_Gaussian.Covariance(Qc)
+
+# Obstacle avoid settings
+cost_sigma = 0.5
+epsilon_dist = 4.0
+
+# prior to start/goal
+pose_fix = noiseModel_Isotropic.Sigma(2, 0.0001)
+vel_fix = noiseModel_Isotropic.Sigma(2, 0.0001)
+
+
+# start and end conf
+start_conf = np.asarray([0, 0])
+start_vel = np.asarray([0, 0])
+end_conf = np.asarray([17, 14])
+end_vel = np.asarray([0, 0])
+avg_vel = (end_conf / total_time_step) / delta_t
+
+
+# plot param
+pause_time = total_time_sec / total_time_step
+
+
+
+
 def get_initializations(start_conf, goal_conf, nr_chains, total_time_step, avg_vel):
   mean_chain = []
   pos_keys = []
@@ -49,15 +119,18 @@ def get_initializations(start_conf, goal_conf, nr_chains, total_time_step, avg_v
 
   parameters = GaussNewtonParams()
   optimizer = GaussNewtonOptimizer(graph, init_values, parameters)
+  result = optimizer.values()
+
   pos_keys = np.asarray(pos_keys)
   # TODO: check with mustafa if to include start and goal
   pos_key_vect = createKeyVector(pos_keys) 
-  joint_marginal = marginals.jointMarginalCovariance(key_vect)
+  marginals = Marginals(graph, result)
+  joint_marginal = marginals.jointMarginalCovariance(pos_key_vect)
   cov_mat = joint_marginal.fullMatrix()
   mean_chain = np.asarray(mean_chain)
-
-  
-
+  mean_chain = mean_chain.flatten()
+  print(mean_chain)
+  print(mean_chain.shape)
   samples = np.random.multivariate_normal(mean_chain, cov_mat, nr_chains)
 
   initializations = []
@@ -68,7 +141,7 @@ def get_initializations(start_conf, goal_conf, nr_chains, total_time_step, avg_v
     initializations[-1][0,:] = start_conf
     initializations[-1][-1,:] = goal_conf
 
-  return samples
+  return initializations
 
 
 class Node(object):
@@ -103,15 +176,6 @@ class Node(object):
 
 
 
-# class Planner(object):
-#   """docstring for Graph"""
-#   def __init__(self):
-#     self.start_node_key = None
-
-#   def get_shortest_path(start_node):
-#     self.start_node_key = s
-
-  
 def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
   
 
@@ -156,30 +220,30 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
   for i in nr_chains:
 
     # connect start to all chains
-    1st_idx = map_[(0,0)] 
-    2nd_idx = map_[(i,1)]
-    nodes[1st_idx].add_neighbour(2nd_idx)
+    first_idx = map_[(0,0)] 
+    second_idx = map_[(i,1)]
+    nodes[first_idx].add_neighbour(second_idx)
 
     # connect goal to all chains
-    1st_idx = map_[(i,total_time_step-1)] 
-    2nd_idx = map_[(0,total_time_step)]
-    nodes[1st_idx].add_neighbour(2nd_idx)
+    first_idx = map_[(i,total_time_step-1)] 
+    second_idx = map_[(0,total_time_step)]
+    nodes[first_idx].add_neighbour(second_idx)
 
   for i in range(nr_chains): # go through each chain
     for j in range(0, total_time_step): # go through each time point
 
-      1st_idx = map_[(i,j)]
-      2st_idx = map_[(i,j+1)]
+      first_idx = map_[(i,j)]
+      second_idx = map_[(i,j+1)]
 
       # connect to start node
       if j == 0:
-        1st_idx = map_[(0,0)]
+        first_idx = map_[(0,0)]
 
       # connect to goal node 
       elif j == total_time_step-1:
-        2nd_idx = map_[(0,total_time_step)]
+        second_idx = map_[(0,total_time_step)]
 
-      nodes[1st_idx].add_neighbour(2nd_idx)
+      nodes[first_idx].add_neighbour(second_idx)
 
   # add random inter connections
   if seed_val is not None:
@@ -193,9 +257,9 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
 
         rand_num = random()
         if random < dropout_prob:
-          1st_idx = map_[(i,j)]
-          2nd_idx = map_[(k,j+1)]
-          nodes[1st_idx].add_neighbour(2nd_idx)          
+          first_idx = map_[(i,j)]
+          second_idx = map_[(k,j+1)]
+          nodes[first_idx].add_neighbour(second_idx)          
 
   return nodes, map_
 
@@ -259,7 +323,7 @@ def get_gtsam_graph(node_list):
 
 #### Dijkstra specific stuff
 
-from queue import PriorityQueue
+from Queue import PriorityQueue
 
 class Planner(object):
   """docstring for Graph"""
@@ -273,13 +337,13 @@ class Planner(object):
     return self.gtsam_graph.at(gt_factor_id).error(self.result)
 
 
-  def get_edge_cost(1st_idx, 2nd_idx):
+  def get_edge_cost(first_idx, second_idx):
     cost = 0
     # add cost of gp and obstacle interpolation factors
-    for gt_factor_id in self.planner_graph[1st_idx].neighbours[2nd_idx]:
+    for gt_factor_id in self.planner_graph[first_idx].neighbours[second_idx]:
       cost += self.get_factor_error(gt_factor_id)
     # add cost of state obstacle factor
-    cost += self.get_factor_error(self.planner_graph[2nd_idx].gt_graph_ob_id)
+    cost += self.get_factor_error(self.planner_graph[second_idx].gt_graph_ob_id)
     return cost
 
   def get_shortest_path(gtsam_graph, planner_graph):
@@ -304,13 +368,36 @@ class Planner(object):
         self.planner_graph[neigh_id].parent_id = cur_id
 
     path = []
-    cur_id = 1
+    if cur_id !=1: 
+      print("Failed to find a path. Check if everything is right")
+
     path.append(self.planner_graph[cur_id].pose)
     while cur_id !=0:
       cur_id = self.planner_graph[cur_id].parent_id
       path.append(self.planner_graph[cur_id].pose)
 
     return path.reverse()
+
+
+##################
+
+
+# start_conf = 
+# goal_conf = 
+# nr_chains = 
+# total_time_step = 
+# initializations = get_initialization(start_conf, goal_conf, 
+#                                     nr_chains, total_time_step)
+# dropout_prob = 
+# seed_val = 
+# node_list, node_map = get_planner_graph(initializations, dropout_prob, seed_val)
+# gtsam_graph = get_gtsam_graph(node_list)
+
+if __name__ == "__main__":
+  samples = get_initializations(start_conf, end_conf, 3, total_time_step, avg_vel)
+  print(samples)
+
+##############3
 
 
 
