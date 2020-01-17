@@ -162,13 +162,13 @@ class Node(object):
     self.neighbours = {}
 
     
-  def add_neighbour(node_key):
+  def add_neighbour(self, node_key):
     if node_key in self.neighbours:
       print("The specified node is already a neighbour")
       return
     self.neighbours[node_key] = []
 
-  def remove_neighbour(node_key):
+  def remove_neighbour(self, node_key):
     if node_key not in self.neighbours:
         print("The specified node is not a neighbour")
         return 
@@ -180,7 +180,7 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
   
 
   # we have total_time_step+1 points in each trajectory
-  total_time_step = inits[0].shape[1] -1
+  total_time_step = inits[0].shape[0] -1
   nr_chains = len(inits)
 
   if nr_chains==1:
@@ -216,33 +216,35 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
       nodes.append(Node(planner_id, inits[i][j,:], avg_vel))
       map_[(i,j)] = planner_id
 
-  # add all segential inchain connections
-  for i in nr_chains:
+  print(nr_chains)
+  print(total_time_step)
+  print([i for i in map_])
+  # # add all segential inchain connections
+  # for i in range(nr_chains):
 
-    # connect start to all chains
-    first_idx = map_[(0,0)] 
-    second_idx = map_[(i,1)]
-    nodes[first_idx].add_neighbour(second_idx)
+  #   # connect start to all chains
+  #   first_idx = map_[(0,0)] 
+  #   second_idx = map_[(i,1)]
+  #   nodes[first_idx].add_neighbour(second_idx)
 
-    # connect goal to all chains
-    first_idx = map_[(i,total_time_step-1)] 
-    second_idx = map_[(0,total_time_step)]
-    nodes[first_idx].add_neighbour(second_idx)
+  #   # connect goal to all chains
+  #   first_idx = map_[(i,total_time_step-1)] 
+  #   second_idx = map_[(0,total_time_step)]
+  #   nodes[first_idx].add_neighbour(second_idx)
 
   for i in range(nr_chains): # go through each chain
     for j in range(0, total_time_step): # go through each time point
-
-      first_idx = map_[(i,j)]
-      second_idx = map_[(i,j+1)]
-
       # connect to start node
       if j == 0:
         first_idx = map_[(0,0)]
-
+        second_idx = map_[(i,j+1)]
       # connect to goal node 
       elif j == total_time_step-1:
+        first_idx = map_[(i,j)]
         second_idx = map_[(0,total_time_step)]
-
+      else:
+        first_idx = map_[(i,j)]
+        second_idx = map_[(i,j+1)]        
       nodes[first_idx].add_neighbour(second_idx)
 
   # add random inter connections
@@ -261,7 +263,7 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
           second_idx = map_[(k,j+1)]
           nodes[first_idx].add_neighbour(second_idx)          
 
-  return nodes, map_
+  return nodes
 
 
 def get_gtsam_graph(node_list):
@@ -286,7 +288,7 @@ def get_gtsam_graph(node_list):
       graph.push_back(PriorFactorVector(key_vel, start_vel, vel_fix))
     elif i==1:
       graph.push_back(PriorFactorVector(key_pos, node_list[i].pose, pose_fix))
-      graph.push_back(PriorFactorVector(key_vel, goal_vel, vel_fix))
+      graph.push_back(PriorFactorVector(key_vel, end_vel, vel_fix))
 
     # GP priors and cost factor
     if i > 0:
@@ -298,7 +300,7 @@ def get_gtsam_graph(node_list):
 
     # add edges for each node
 
-    for neigh_id in node[i].neighbours:
+    for neigh_id in node_list[i].neighbours:
       key_pos1 = symbol(ord('x'), i)
       key_pos2 = symbol(ord('x'), neigh_id)
       key_vel1 = symbol(ord('v'), i)
@@ -317,7 +319,7 @@ def get_gtsam_graph(node_list):
                 pR_model, sdf, cost_sigma, epsilon_dist,
                 Qc_model, delta_t, tau))
           node_list[i].neighbours[neigh_id].append(graph.size()-1)          
-
+  return graph, init_values
 
 
 
@@ -394,8 +396,36 @@ class Planner(object):
 # gtsam_graph = get_gtsam_graph(node_list)
 
 if __name__ == "__main__":
-  samples = get_initializations(start_conf, end_conf, 3, total_time_step, avg_vel)
-  print(samples)
+  inits = get_initializations(start_conf, end_conf, 3, total_time_step, avg_vel)
+  print(inits)
+
+  planner_graph = get_planner_graph(inits, dropout_prob=0.5, avg_vel=avg_vel, seed_val=1)
+  print(len(planner_graph))
+
+  gtsam_graph, init_values = get_gtsam_graph(planner_graph)
+
+  print(gtsam_graph.size())
+
+  use_trustregion_opt = True
+
+  if use_trustregion_opt:
+    parameters = DoglegParams()
+    parameters.setVerbosity('ERROR')
+    optimizer = DoglegOptimizer(gtsam_graph, init_values, parameters)
+  else:
+    parameters = GaussNewtonParams()
+    #parameters.setRelativeErrorTol(1e-5)
+    #parameters.setMaxIterations(100)
+    parameters.setVerbosity('ERROR')
+    optimizer = GaussNewtonOptimizer(gtsam_graph, init_values, parameters)
+
+  print('Initial Error = %d\n', gtsam_graph.error(init_values))
+
+
+  optimizer.optimizeSafely()
+  result = optimizer.values()
+
+  print('Final Error = %d\n', gtsam_graph.error(result))
 
 ##############3
 
