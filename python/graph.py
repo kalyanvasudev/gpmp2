@@ -15,7 +15,7 @@ from gpmp_utils.signedDistanceField2D import signedDistanceField2D
 from gpmp_utils.plotEvidenceMap2D import plotEvidenceMap2D
 from gpmp_utils.plotPointRobot2D import plotPointRobot2D
 from gpmp_utils.plotSignedDistanceField2D import plotSignedDistanceField2D
-
+import copy
 
 from pyrobot import Robot
 
@@ -94,7 +94,6 @@ def get_initializations(start_conf, goal_conf, nr_chains, total_time_step, avg_v
                                          end_conf * i/float(total_time_step)
     mean_chain.append(pose)
     vel = avg_vel
-    print(pose)
     init_values.insert(key_pos, pose)
     init_values.insert(key_vel, vel)
     
@@ -129,8 +128,6 @@ def get_initializations(start_conf, goal_conf, nr_chains, total_time_step, avg_v
   cov_mat = joint_marginal.fullMatrix()
   mean_chain = np.asarray(mean_chain)
   mean_chain = mean_chain.flatten()
-  print(mean_chain)
-  print(mean_chain.shape)
   samples = np.random.multivariate_normal(mean_chain, cov_mat, nr_chains)
 
   initializations = []
@@ -183,9 +180,9 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
   total_time_step = inits[0].shape[0] -1
   nr_chains = len(inits)
 
-  if nr_chains==1:
-    print("Single chain passed. Please pass multiple chains")
-    return
+  # if nr_chains==1:
+  #   print("Single chain passed. Please pass multiple chains")
+  #   return
 
   if total_time_step ==0:
     print("total_time_step cannot be 0")
@@ -215,22 +212,6 @@ def get_planner_graph(inits, dropout_prob, avg_vel, seed_val=None):
       planner_id = len(nodes)
       nodes.append(Node(planner_id, inits[i][j,:], avg_vel))
       map_[(i,j)] = planner_id
-
-  print(nr_chains)
-  print(total_time_step)
-  print([i for i in map_])
-  # # add all segential inchain connections
-  # for i in range(nr_chains):
-
-  #   # connect start to all chains
-  #   first_idx = map_[(0,0)] 
-  #   second_idx = map_[(i,1)]
-  #   nodes[first_idx].add_neighbour(second_idx)
-
-  #   # connect goal to all chains
-  #   first_idx = map_[(i,total_time_step-1)] 
-  #   second_idx = map_[(0,total_time_step)]
-  #   nodes[first_idx].add_neighbour(second_idx)
 
   for i in range(nr_chains): # go through each chain
     for j in range(0, total_time_step): # go through each time point
@@ -289,8 +270,7 @@ def get_gtsam_graph(node_list):
     elif i==1:
       graph.push_back(PriorFactorVector(key_pos, node_list[i].pose, pose_fix))
       graph.push_back(PriorFactorVector(key_vel, end_vel, vel_fix))
-
-    # GP priors and cost factor
+    
     if i > 0:
       #% cost factor
       graph.push_back(ObstaclePlanarSDFFactorPointRobot(key_pos, pR_model, 
@@ -334,27 +314,27 @@ class Planner(object):
     self.gtsam_graph = gtsam_graph
     self.planner_graph = planner_graph
 
-  def get_factor_error(gt_factor_id):
+  def get_factor_error(self, gt_factor_id):
     
     return self.gtsam_graph.at(gt_factor_id).error(self.result)
 
 
-  def get_edge_cost(first_idx, second_idx):
+  def get_edge_cost(self, first_idx, second_idx):
     cost = 0
     # add cost of gp and obstacle interpolation factors
     for gt_factor_id in self.planner_graph[first_idx].neighbours[second_idx]:
       cost += self.get_factor_error(gt_factor_id)
     # add cost of state obstacle factor
-    cost += self.get_factor_error(self.planner_graph[second_idx].gt_graph_ob_id)
+    if second_idx !=1:
+      cost += self.get_factor_error(self.planner_graph[second_idx].gt_graph_ob_id)
     return cost
 
-  def get_shortest_path(gtsam_graph, planner_graph):
+  def get_shortest_path(self):
 
     cur_id = 0
     priority_q = PriorityQueue()
     priority_q.put((0, cur_id))
     self.planner_graph[cur_id].visited = True
-
     while priority_q.qsize() > 0:
       cur_cost, cur_id = priority_q.get()
 
@@ -378,25 +358,16 @@ class Planner(object):
       cur_id = self.planner_graph[cur_id].parent_id
       path.append(self.planner_graph[cur_id].pose)
 
-    return path.reverse()
+    path.reverse()
+    return path
 
-
-##################
-
-
-# start_conf = 
-# goal_conf = 
-# nr_chains = 
-# total_time_step = 
-# initializations = get_initialization(start_conf, goal_conf, 
-#                                     nr_chains, total_time_step)
-# dropout_prob = 
-# seed_val = 
-# node_list, node_map = get_planner_graph(initializations, dropout_prob, seed_val)
-# gtsam_graph = get_gtsam_graph(node_list)
+def update_planner_graph(result, planner_graph):
+  for i in range(len(planner_graph)):
+    planner_graph[i].pose = result.atVector(symbol(ord('x'), i))
+    planner_graph[i].vel = result.atVector(symbol(ord('v'), i))
 
 if __name__ == "__main__":
-  inits = get_initializations(start_conf, end_conf, 3, total_time_step, avg_vel)
+  inits = get_initializations(start_conf, end_conf, 4, total_time_step, avg_vel)
   print(inits)
 
   planner_graph = get_planner_graph(inits, dropout_prob=0.5, avg_vel=avg_vel, seed_val=1)
@@ -404,19 +375,19 @@ if __name__ == "__main__":
 
   gtsam_graph, init_values = get_gtsam_graph(planner_graph)
 
-  print(gtsam_graph.size())
+  print(gtsam_graph)
 
   use_trustregion_opt = True
 
   if use_trustregion_opt:
     parameters = DoglegParams()
-    parameters.setVerbosity('ERROR')
+    #parameters.setVerbosity('ERROR')
     optimizer = DoglegOptimizer(gtsam_graph, init_values, parameters)
   else:
     parameters = GaussNewtonParams()
     #parameters.setRelativeErrorTol(1e-5)
     #parameters.setMaxIterations(100)
-    parameters.setVerbosity('ERROR')
+    #parameters.setVerbosity('ERROR')
     optimizer = GaussNewtonOptimizer(gtsam_graph, init_values, parameters)
 
   print('Initial Error = %d\n', gtsam_graph.error(init_values))
@@ -427,7 +398,25 @@ if __name__ == "__main__":
 
   print('Final Error = %d\n', gtsam_graph.error(result))
 
-##############3
+  update_planner_graph(result, planner_graph)
+
+  planner = Planner(result, gtsam_graph, planner_graph)
+  path = planner.get_shortest_path()
+  print(path)
+
+
+## plot final values
+figure = plt.figure()
+axis = figure.gca()
+# plot world
+plotEvidenceMap2D(figure, axis, dataset.map, dataset.origin_x, dataset.origin_y, cell_size)
+for i in range(total_time_step+1):
+    axis.set_title('Optimized Values')
+    # plot arm
+    conf = path[i]
+    #conf = result.atVector(symbol(ord('x'), i))
+    plotPointRobot2D(figure, axis, pR_model, conf)
+    plt.pause(pause_time)
 
 
 
