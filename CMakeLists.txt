@@ -74,9 +74,10 @@ endif()
 
 # Wrapping to Python
 if(GPMP2_BUILD_PYTHON_TOOLBOX)
-  include_directories(${GTSAM_DIR}/cython)
+  #include_directories(${GTSAM_DIR}/cython)
   include(GtsamCythonWrap)
   include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
+  include_directories(/usr/local/cython)
 
   wrap_and_install_library_cython("gpmp2.h"
                                   "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
